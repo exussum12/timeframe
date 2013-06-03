@@ -33,6 +33,7 @@ var Timeframe = Class.create({
     this.format       = this.options.get('format')     || Locale.get('format');
     this.weekOffset   = this.options.get('weekOffset') || Locale.get('weekOffset');
     this.maxRange = this.options.get('maxRange');
+    this.minRange = this.options.get('minRange');
 
     this.firstDayId = this.element.id + '_firstday';
     this.lastDayId = this.element.id + '_lastday';
@@ -360,6 +361,7 @@ var Timeframe = Class.create({
       else
         this.startdrag = this.range.set('start', this.range.set('end', date));
     }
+    this.validateRange(this.range.get('start'), this.range.get('end'));
     this.refreshRange();
   },
 
@@ -422,18 +424,29 @@ var Timeframe = Class.create({
   },
 
   validateRange: function(start, end) {
-    if (this.maxRange) {
+    if (this.maxRange||this.minRange) {
       var range = this.maxRange - 1;
+      var minrange = this.minRange - 1;
       var days = parseInt((end - start) / 86400000);
-      if (days > range) {
+      if (days > range || days < minrange) {
         if (start == this.startdrag) {
           end = new Date(this.startdrag);
-          end.setDate(end.getDate() + range);
+          end.setDate(end.getDate() + (days > range)?range:minrange);
         } else {
           start = new Date(this.startdrag);
           start.setDate(start.getDate() - range);
         }
+	}
+      if (this.minRange && days < minrange){
+	if(start == this.startdrag){
+	  end = new Date(this.startdrag);
+          end.setDate(end.getDate() + minrange);
+        } else {
+          start = new Date(this.startdrag);
+          start.setDate(start.getDate() - minrange);
+	}  	
       }
+	
     }
     this.range.set('start', start);
     this.range.set('end', end);
