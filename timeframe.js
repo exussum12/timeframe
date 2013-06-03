@@ -477,7 +477,9 @@ var Timeframe = Class.create({
   },
 
   refreshRange: function() {
-    this.element.select('td').each(function(day) {
+ if(!( $$(".startrange")[0] &&  $$(".endrange")[0])) return;
+  for( ele = $$(".startrange")[0].offsetParent, end = $$(".endrange")[0].offsetParent.nextSibling;ele != end;ele = ele.nextSibling){
+    ele.select('td').each(function(day) {
       day.writeAttribute('class', day.baseClass);
       if (this.range.get('start') && this.range.get('end') && this.range.get('start') <= day.date && day.date <= this.range.get('end')) {
         var baseClass = day.hasClassName('beyond') ? 'beyond_' : day.hasClassName('today') ? 'today_' : null;
@@ -494,6 +496,7 @@ var Timeframe = Class.create({
         day.unselectable = null;
       }
     }.bind(this));
+   }
     if (this.dragging) this.refreshField('start').refreshField('end');
   },
 
@@ -554,3 +557,5 @@ Object.extend(Date.prototype, {
     return new Date(this.getFullYear(), this.getMonth(), this.getDate(), 12);
   }
 });
+//$$(".active")[1].offsetParent.select("td")
+
