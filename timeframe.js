@@ -333,6 +333,7 @@ var Timeframe = Class.create({
 
   clear: function() {
     this.clearRange();
+    this.clearSelection();
     this.refreshRange();
   },
 
@@ -462,27 +463,94 @@ var Timeframe = Class.create({
     this.refreshField('start').refreshField('end');
     if (this.options.keys().include('onClear')) this.options.get('onClear')();
   },
+   clearSelection: function() {
+		var classList = new Array(
+									'stuck',
+									'selected',
+									'startrange',
+									'endrange'
+								);
+		var tf = this;
+		$$('td.stuck, td.selected, td.rangestart, td.rangeend').each(function(day) {
+			if (!(tf.range.get('start') && tf.range.get('end') && tf.range.get('start') <= day.date && day.date <= tf.range.get('end'))) {
+				for (var i =0, total = classList.length;i<total;i++){
+					console.log(day);
+					if(day.hasClassName(classList[i])) {
+						console.log("Actually removeing");
+						day.removeClassName(classList[i]);
+					}
+				}
+			}else{
+				//clean up the css
+				if (day.hasClassName('booked')) day.removeClassName('booked');
+				if (day.hasClassName('endbooked')) day.removeClassName('endbooked');
+				if (day.hasClassName('startbooked')) day.removeClassName('startbooked');
+			}
+		});
+  },
 
-  refreshRange: function() {
-    this.element.select('td').each(function(day) {
-      day.writeAttribute('class', day.baseClass);
-      if (this.range.get('start') && this.range.get('end') && this.range.get('start') <= day.date && day.date <= this.range.get('end')) {
-        var baseClass = day.hasClassName('beyond') ? 'beyond_' : day.hasClassName('today') ? 'today_' : null;
-        var state = this.stuck || this.mousedown ? 'stuck' : 'selected';
-        if (baseClass) day.addClassName(baseClass + state);
-        day.addClassName(state);
-        var rangeClass = '';
-        if (this.range.get('start').toString() == day.date) rangeClass += 'start';
-        if (this.range.get('end').toString() == day.date) rangeClass += 'end';
-        if (rangeClass.length > 0) day.addClassName(rangeClass + 'range');
-      }
-      if (Prototype.Browser.Opera) {
-        day.unselectable = 'on'; // Trick Opera into refreshing the selection (FIXME)
-        day.unselectable = null;
-      }
-    }.bind(this));
+  refreshRange: function(total) {
+
+
+		var firstActive = $$('td.active');
+		total = Boolean(total);
+
+		if (!(this.range.get('start') && this.range.get('end'))) {
+			console.log("HERE");
+			return;
+		} else {
+			var start = Math.round((this.range.get('start') - firstActive[0].date) / 86400000)-2;
+			var end = Math.round((this.range.get('end') - firstActive[0].date) / 86400000) + 2;
+			var oldstart = $$("td.startrange")[0];
+				if (oldstart) oldstart = Math.round((oldstart.date -this.range.get('start') )/86400000);
+			var oldend = $$("td.endrange")[0];
+				if (oldend) oldend = Math.round((oldend.date -this.range.get('end') )/86400000);
+			this.clearSelection();
+			if (!total && (oldstart || oldend)) {
+				if(!(oldstart&&oldend)){
+					var startend = (oldend)?end:start;
+					var startendrange = (oldend)?oldend:oldstart;
+					start = ((startendrange > 0)?startend:startend+startendrange)-2;
+					end= ((startendrange > 0)?startendrange+startend:startend)+2;
+				}
+			}
+			start = Math.max(0, start);
+			end = Math.min(firstActive.length-1,end);
+			for (var i = start; day = firstActive[i], i <= end; i++) {
+				this.refreshTD(day);
+			}
+		}
+
     if (this.dragging) this.refreshField('start').refreshField('end');
   },
+		refreshTD: function(day) {
+			day.writeAttribute('class', day.baseClass);
+			if (this.range.get('start') && this.range.get('end') && this.range.get('start') <= day.date && day.date <= this.range.get('end')) {
+
+				var baseClass = day.hasClassName('beyond') ? 'beyond_' : day.hasClassName('today') ? 'today_' : null;
+				var state = this.stuck || this.mousedown ? 'stuck' : 'selected';
+				if (baseClass) day.addClassName(baseClass + state);
+				console.log("adding " + state);
+				console.log(this);
+				day.addClassName(state);
+				var rangeClass = '';
+				if (rangeClass.length > 0) {
+					day.addClassName(rangeClass + 'range');
+				}
+				console.log("here");
+				if (this.range.get('start').toString() == day.date){
+					day.addClassName('startrange');
+				}
+				if (this.range.get('end').toString() == day.date){
+					day.addClassName('endrange');
+				}
+			}
+			if (Prototype.Browser.Opera) {
+				day.unselectable = 'on'; // Trick Opera into refreshing the selection (FIXME)
+				day.unselectable = null;
+			}
+
+		},
 
   setRange: function(start, end) {
     var range = $H({ start: start, end: end });
